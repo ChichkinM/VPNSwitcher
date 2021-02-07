@@ -1,0 +1,9 @@
+{
+  "name": "VPN Switcher",
+  "description": "...",
+  "uuid": "vpnswitcher@chichkinmikhail.gmail.com",
+  "shell-version": [
+    "3.30.2"
+  ],
+  "settings": "org.gnome.shell.extensions.vpnswitcher"
+}
