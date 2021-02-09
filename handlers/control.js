@@ -1,6 +1,7 @@
 const GObject = imports.gi.GObject;
 const {St} = imports.gi;
 const Lang = imports.lang;
+const Main = imports.ui.main;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
@@ -30,6 +31,9 @@ var Control = new GObject.Class({
     },
 
     enable() {
+        this.settings = Convenience.getSettings()
+        this.settings.connect('changed::show-default-menu-icon',
+            Lang.bind(this, this.setVisibleDefaultMenuIcon));
     },
 
     disable() {
@@ -46,6 +50,30 @@ var Control = new GObject.Class({
             style_class: 'system-status-icon'
         });
         this.button.set_child(icon);
+    },
+
+    setVisibleDefaultMenuIcon() {
+        this.showDefaultMenuIcon = this.settings.get_boolean('show-default-menu-icon');
+
+        let net = Main.panel.statusArea.aggregateMenu._network;
+        if (!net)
+            return;
+
+        let indicator = net._vpnIndicator;
+        if (!indicator)
+            return;
+
+        if (!this.showDefaultMenuIcon) {
+            this.defaultMenuIndicatorConnection = indicator.connect('notify::visible',
+                () => {
+                    if (indicator.visible) {
+                        indicator.visible = false;
+                    }
+                }
+            );
+        } else if (this.defaultMenuIndicatorConnection) {
+            indicator.disconnect(this.defaultMenuIndicatorConnection);
+        }
     },
 
     _onButtonClicked(actor, event) {

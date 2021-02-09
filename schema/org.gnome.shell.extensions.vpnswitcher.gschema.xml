@@ -10,6 +10,11 @@
             <summary>Order in panel</summary>
             <description>...</description>
         </key>
+        <key name="show-default-menu-icon" type="b">
+            <default>true</default>
+            <summary>...</summary>
+            <description>...</description>
+        </key>
         <key name="vpn-name" type="s">
             <default>"vpn"</default>
             <summary>...</summary>

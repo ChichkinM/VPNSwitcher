@@ -58,6 +58,16 @@ const VPNSwitcherSettings = new GObject.Class({
             this._settings.set_int('order', value);
         }));
         this.attach(widget, 1, 3, 1, 1);
+
+        this._makeLabel("Show default menu icon", 4);
+        widget = new Gtk.CheckButton({halign: Gtk.Align.END});
+        widget.set_sensitive(true);
+        widget.set_active(this._settings.get_boolean('show-default-menu-icon'));
+        widget.connect('toggled', Lang.bind(this, function (w) {
+            let value = w.get_active();
+            this._settings.set_boolean('show-default-menu-icon', value);
+        }));
+        this.attach(widget, 1, 4, 1, 1);
     },
 
     _makeLabel: function (text, row) {

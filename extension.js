@@ -17,6 +17,10 @@ function init() {
     control.init(() => vpn.toggle());
     vpn.init((item) => control.setIcon(item));
 
+    vpn.connect('network-ready', () => {
+        control.setVisibleDefaultMenuIcon()
+    });
+
     positioning = new Positioning.Positioning(control.button);
 }
 

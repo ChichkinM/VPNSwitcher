@@ -7,8 +7,12 @@ const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const Convenience = Me.imports.convenience;
 
-var VpnStatus = new GObject.Class ({
+var VpnStatus = new GObject.Class({
     Name: 'VpnStatus',
+    Signals: {
+        'network-ready': {},
+    },
+
     init(sourceStatusChangedCallback) {
         this.statusChangedCallback = sourceStatusChangedCallback;
     },
@@ -96,11 +100,12 @@ var VpnStatus = new GObject.Class ({
 
     subscribeToVpnAttach() {
         let _network = Main.panel.statusArea.aggregateMenu._network;
-        let connection = _network._vpnIndicator.connect('notify::visible', Lang.bind( this, function () {
+        let connection = _network._vpnIndicator.connect('notify::visible', Lang.bind(this, function () {
             this.attachVpn()
 
             if (this.attachedVpnItem) {
                 _network._vpnIndicator.disconnect(connection)
+                this.emit('network-ready');
             }
         }));
     }
