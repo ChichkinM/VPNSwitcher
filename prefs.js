@@ -35,6 +35,12 @@ const VPNSwitcherSettings = new GObject.Class({
         buffer.connect('changed', Lang.bind(this, function () {
             this._settings.set_string('vpn-name', buffer.text)
         }));
+        this._settings.connect('changed::vpn-name', Lang.bind(this, function () {
+            let name = this._settings.get_string('vpn-name');
+            if (name !== buffer.text) {
+                buffer.text = name;
+            }
+        }));
         this.attach(widget, 1, 1, 1, 1);
 
 

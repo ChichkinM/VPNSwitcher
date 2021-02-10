@@ -33,7 +33,7 @@ var VpnStatus = new GObject.Class({
     },
 
     onAttachedVpnNameChanged() {
-        log("### onAttachedVpnNameChanged " + this.attachedVpnItem.getName())
+        this.settings.set_string('vpn-name', this.attachedVpnItem.getName());
     },
 
     onAttachedVpnStatusChanged() {
