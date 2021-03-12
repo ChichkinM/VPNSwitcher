@@ -2,15 +2,20 @@ const GObject = imports.gi.GObject;
 const {St} = imports.gi;
 const Lang = imports.lang;
 const Main = imports.ui.main;
+const Signals = imports.signals;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const Convenience = Me.imports.convenience;
 
-var Control = new GObject.Class({
-    Name: 'Control',
-    init(sourceToggleCallback) {
-        this.toggleCallback = sourceToggleCallback;
+/**
+ * Signals:
+ *      switched();
+ */
+var Control = class Control {
+    constructor (vpnPtr) {
+        this.vpnPtr = vpnPtr;
+        this.settings = Convenience.getSettings()
 
         this.button = new St.Bin({
             style_class: 'panel-button',
@@ -28,29 +33,37 @@ var Control = new GObject.Class({
         this.button.set_child(icon);
         this.button.connect('button-press-event',
             Lang.bind(this, this._onButtonClicked));
-    },
 
-    enable() {
-        this.settings = Convenience.getSettings()
-        this.settings.connect('changed::show-default-menu-icon',
+
+        this.showIconConnection = this.settings.connect(
+            'changed::show-default-menu-icon',
             Lang.bind(this, this.setVisibleDefaultMenuIcon));
-    },
+
+        this.statusChangedConnection = this.vpnPtr.connect(
+            'status-changed', Lang.bind(this, this.setIcon));
+
+        this.netReadyConnection = this.vpnPtr.connect(
+            'network-ready', Lang.bind(this, this.setVisibleDefaultMenuIcon));
+    }
 
     disable() {
-    },
+        this.settings.disconnect(this.showIconConnection);
+        this.vpnPtr.disconnect(this.statusChangedConnection);
+        this.vpnPtr.disconnect(this.netReadyConnection);
+    }
 
-    setIcon(attachedVpnItem) {
+    setIcon() {
         let iconSource = "network-vpn-no-route-symbolic"
-        if (attachedVpnItem) {
-            iconSource = attachedVpnItem.getIndicatorIcon() === '' ?
-                "security-low-symbolic" : attachedVpnItem.getIndicatorIcon()
+        if (this.vpnPtr.attachedVpnItem) {
+            iconSource = this.vpnPtr.attachedVpnItem.getIndicatorIcon() === '' ?
+                "security-low-symbolic" : this.vpnPtr.attachedVpnItem.getIndicatorIcon();
         }
         let icon = new St.Icon({
             icon_name: iconSource,
             style_class: 'system-status-icon'
         });
         this.button.set_child(icon);
-    },
+    }
 
     setVisibleDefaultMenuIcon() {
         this.showDefaultMenuIcon = this.settings.get_boolean('show-default-menu-icon');
@@ -74,17 +87,18 @@ var Control = new GObject.Class({
         } else if (this.defaultMenuIndicatorConnection) {
             indicator.disconnect(this.defaultMenuIndicatorConnection);
         }
-    },
+    }
 
     _onButtonClicked(actor, event) {
         switch (event.get_button()) {
             case 1: {
-                this.toggleCallback()
+                this.emit('switched');
                 break;
             }
             default:
                 break;
         }
     }
-});
+};
+Signals.addSignalMethods(Control.prototype);
 

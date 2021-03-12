@@ -11,27 +11,22 @@ let vpn;
 let control;
 
 function init() {
-    vpn = new VpnStatus.VpnStatus();
-    control = new Control.Control();
-
-    control.init(() => vpn.toggle());
-    vpn.init((item) => control.setIcon(item));
-
-    vpn.connect('network-ready', () => {
-        control.setVisibleDefaultMenuIcon()
-    });
-
-    positioning = new Positioning.Positioning(control.button);
 }
 
 function enable() {
-    vpn.enable();
-    control.enable();
-    positioning.enable();
+    vpn = new VpnStatus.VpnStatus();
+    control = new Control.Control(vpn);
+    positioning = new Positioning.Positioning(control);
+
+    vpn.run(control);
 }
 
 function disable() {
-    vpn.disable();
-    control.disable();
     positioning.disable();
+    control.disable();
+    vpn.disable();
+
+    positioning = null;
+    control = null;
+    vpn = null;
 }

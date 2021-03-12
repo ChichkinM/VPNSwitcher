@@ -1,113 +1,91 @@
 const GObject = imports.gi.GObject;
 const Main = imports.ui.main;
+const Net = imports.ui.status.network;
 const Lang = imports.lang;
-const {NM} = imports.gi;
+const {NM, Clutter} = imports.gi;
+const Signals = imports.signals;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const Convenience = Me.imports.convenience;
 
-var VpnStatus = new GObject.Class({
-    Name: 'VpnStatus',
-    Signals: {
-        'network-ready': {},
-    },
+/**
+ * Signals:
+ *      network-ready();
+ *      status-changed();
+ */
+var VpnStatus = class VpnStatus {
+    run(controlPtr) {
+        this.controlPtr = controlPtr;
+        this.settings = Convenience.getSettings();
 
-    init(sourceStatusChangedCallback) {
-        this.statusChangedCallback = sourceStatusChangedCallback;
-    },
+        this.vpnNameChangedConnection = this.settings.connect(
+            'changed::vpn-name', Lang.bind(this, this.attachVpn));
+        this.switchedConnection = this.controlPtr.connect(
+            'switched', Lang.bind(this, this.toggle));
 
-    enable() {
-        this.settings = Convenience.getSettings()
-        this.settings.connect('changed::vpn-name', Lang.bind(this, this.attachVpn));
-
-        this.attachVpn()
-        this.subscribeToVpnAttach()
-    },
+        this.attachVpn();
+        this.subscribeToVpnAttach();
+    }
 
     disable() {
-    },
+        this.settings.disconnect(this.vpnNameChangedConnection);
+        this.controlPtr.disconnect(this.switchedConnection);
+    }
 
     toggle() {
-        this.attachedVpnItem._toggle()
-    },
+        this.attachedVpnItem._toggle();
+    }
 
     onAttachedVpnNameChanged() {
         this.settings.set_string('vpn-name', this.attachedVpnItem.getName());
-    },
+    }
 
     onAttachedVpnStatusChanged() {
-        this.statusChangedCallback(this.attachedVpnItem);
-
-        if (!this.attachedVpnItem._activeConnection) {
-            log("### onAttachedVpnStatusChanged not active")
-            return
-        }
-        log("### onAttachedVpnStatusChanged " + this.getStatus(
-            this.attachedVpnItem._activeConnection.vpn_state))
-    },
-
-    getStatus(vpn_state) {
-        if (!vpn_state)
-            return 'invalid';
-
-        switch (vpn_state) {
-            case NM.VpnConnectionState.DISCONNECTED:
-                return _("disconnected");
-            case NM.VpnConnectionState.ACTIVATED:
-                return _("connected");
-            case NM.VpnConnectionState.PREPARE:
-            case NM.VpnConnectionState.CONNECT:
-            case NM.VpnConnectionState.IP_CONFIG_GET:
-                return _("connecting…");
-            case NM.VpnConnectionState.NEED_AUTH:
-                /* Translators: this is for network connections that require some kind of key or password */
-                return _("authentication required");
-            case NM.VpnConnectionState.FAILED:
-                return _("connection failed");
-            default:
-                return 'invalid';
-        }
-    },
+        this.emit('status-changed');
+    }
 
     attachVpn() {
         let _network = Main.panel.statusArea.aggregateMenu._network;
         if (!_network) {
-            return
+            return;
         }
 
         let vpnSection = _network._vpnSection
         if (!vpnSection) {
-            return
+            return;
         }
 
-        this.attachedVpnItem = undefined
+        this.attachedVpnItem = undefined;
         let vpnName = this.settings.get_string('vpn-name');
 
         let vpnItems = _network._vpnSection._connectionItems.values();
         for (let item of vpnItems) {
             if (item.getName() === vpnName) {
-                this.attachedVpnItem = item
+                this.attachedVpnItem = item;
                 this.attachedVpnItem.connect('name-changed',
                     Lang.bind(this, this.onAttachedVpnNameChanged));
                 this.attachedVpnItem.connect('icon-changed',
                     Lang.bind(this, this.onAttachedVpnStatusChanged));
+                break;
             }
         }
-
-        this.statusChangedCallback(this.attachedVpnItem);
-    },
+        this.emit('status-changed');
+    }
 
     subscribeToVpnAttach() {
         let _network = Main.panel.statusArea.aggregateMenu._network;
-        let connection = _network._vpnIndicator.connect('notify::visible', Lang.bind(this, function () {
-            this.attachVpn()
+        let visibleChangedConnection = _network._vpnIndicator.connect(
+            'notify::visible',
+            Lang.bind(this, function () {
+            this.attachVpn();
 
             if (this.attachedVpnItem) {
-                _network._vpnIndicator.disconnect(connection)
+                _network._vpnIndicator.disconnect(visibleChangedConnection);
                 this.emit('network-ready');
             }
         }));
     }
 
-});
+};
+Signals.addSignalMethods(VpnStatus.prototype);
