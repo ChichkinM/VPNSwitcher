@@ -1,6 +1,6 @@
 {
   "name": "VPN Switcher",
-  "description": "...",
+  "description": "Duplicates vpn switch to the top panel.",
   "uuid": "vpnswitcher@chichkinmikhail.gmail.com",
   "shell-version": [
     "3.30.2"

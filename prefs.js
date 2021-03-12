@@ -24,7 +24,7 @@ const VPNSwitcherSettings = new GObject.Class({
         let widget;
 
 
-        this._makeLabel("VPN", 1);
+        this._makeLabel("VPN Name", 1);
         let buffer = new Gtk.TextBuffer({
             text: this._settings.get_string('vpn-name')
         });
